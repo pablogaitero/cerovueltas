@@ -39,16 +39,19 @@ export default function LoginPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { setLoading(false); return }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
+   const { data: rawProfile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', authData.user.id)
+    .single()
+
+   const profile = rawProfile as { role: string } | null
+   const destino = profile?.role === 'profesional' ? '/profesional' : '/cliente'
 
     if (redirect) {
       router.push(redirect)
     } else {
-      router.push(profile?.role === 'profesional' ? '/profesional' : '/cliente')
+      router.push(destino)
     }
 
     router.refresh()
