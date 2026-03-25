@@ -26,7 +26,7 @@ export default function GestionInforme({ informeId, estadoActual, profesionalId,
     setLoading(true)
     const { error: err } = await supabase
       .from('informes')
-      .update({ profesional_id: profesionalId, estado: 'en_proceso' })
+      .update({ profesional_id: profesionalId, estado: 'en_proceso' } as never)
       .eq('id', informeId)
     if (!err) { setEstado('en_proceso'); router.refresh() }
     else setError('Error al tomar el informe.')
