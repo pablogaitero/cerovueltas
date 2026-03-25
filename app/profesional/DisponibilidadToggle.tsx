@@ -18,7 +18,7 @@ export default function DisponibilidadToggle({ profesionalId, disponibleInicial 
     const nuevo = !disponible
     const { error } = await supabase
       .from('profesionales')
-      .update({ disponible: nuevo })
+      .update({ disponible: nuevo } as never)
       .eq('id', profesionalId)
 
     if (!error) setDisponible(nuevo)
