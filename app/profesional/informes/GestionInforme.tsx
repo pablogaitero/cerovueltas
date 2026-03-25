@@ -61,7 +61,7 @@ export default function GestionInforme({ informeId, estadoActual, profesionalId,
       .upload(path, file, { upsert: true })
     if (upErr) { setError('Error al subir archivo.'); setLoading(false); return }
     const { data: { publicUrl } } = supabase.storage.from('informes').getPublicUrl(path)
-    await supabase.from('informes').update({ archivo_url: publicUrl }).eq('id', informeId)
+    await supabase.from('informes').update({ archivo_url: publicUrl } as never).eq('id', informeId)
     setArchivo(publicUrl)
     router.refresh()
     setLoading(false)
