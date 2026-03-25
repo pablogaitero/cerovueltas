@@ -14,21 +14,24 @@ interface Props {
 
 export default function SolicitarInforme({ tipo, precio, clienteId }: Props) {
   const [loading, setLoading] = useState(false)
-  const [ok, setOk] = useState(false)
-  const [error, setError] = useState('')
-  const router = useRouter()
+  const [ok, setOk]           = useState(false)
+  const [error, setError]     = useState('')
+  const router   = useRouter()
   const supabase = createClient()
 
   async function handleSolicitar() {
     setError('')
     setLoading(true)
 
-    const { error: err } = await supabase.from('informes').insert({
-      cliente_id: clienteId,
-      tipo,
-      precio,
-      estado: 'solicitado',
-    })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: err } = await (supabase as any)
+      .from('informes')
+      .insert({
+        cliente_id: clienteId,
+        tipo,
+        precio,
+        estado: 'solicitado',
+      })
 
     if (err) {
       setError('Error al solicitar. Intenta de nuevo.')
