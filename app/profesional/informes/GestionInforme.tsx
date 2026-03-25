@@ -7,11 +7,11 @@ import { Loader2, Upload, CheckCircle } from 'lucide-react'
 import type { EstadoInforme } from '@/lib/supabase/types'
 
 interface Props {
-  informeId:    string
-  estadoActual: EstadoInforme
-  profesionalId:string
-  archivoUrl:   string | null
-  modo:         'tomar' | 'gestionar'
+  informeId:     string
+  estadoActual:  EstadoInforme
+  profesionalId: string
+  archivoUrl:    string | null
+  modo:          'tomar' | 'gestionar'
 }
 
 export default function GestionInforme({ informeId, estadoActual, profesionalId, archivoUrl, modo }: Props) {
@@ -19,7 +19,7 @@ export default function GestionInforme({ informeId, estadoActual, profesionalId,
   const [estado,   setEstado]   = useState<EstadoInforme>(estadoActual)
   const [archivo,  setArchivo]  = useState(archivoUrl)
   const [error,    setError]    = useState('')
-  const router  = useRouter()
+  const router   = useRouter()
   const supabase = createClient()
 
   async function tomarInforme() {
@@ -34,15 +34,16 @@ export default function GestionInforme({ informeId, estadoActual, profesionalId,
   }
 
   async function avanzarEstado() {
-    const siguiente: Record<string, EstadoInforme> = {
-      en_proceso: 'entregado',
-    }
+    const siguiente: Record<string, EstadoInforme> = { en_proceso: 'entregado' }
     const nuevoEstado = siguiente[estado]
     if (!nuevoEstado) return
     setLoading(true)
     const update: Record<string, unknown> = { estado: nuevoEstado }
     if (nuevoEstado === 'entregado') update.entregado_at = new Date().toISOString()
-    const { error: err } = await supabase.from('informes').update(update as never).eq('id', informeId)
+    const { error: err } = await supabase
+      .from('informes')
+      .update(update as never)
+      .eq('id', informeId)
     if (!err) { setEstado(nuevoEstado); router.refresh() }
     else setError('Error al actualizar estado.')
     setLoading(false)
@@ -79,12 +80,10 @@ export default function GestionInforme({ informeId, estadoActual, profesionalId,
     )
   }
 
-  // Modo gestionar
   return (
     <div className="flex items-center gap-2">
       {error && <p className="text-red-500 text-xs">{error}</p>}
 
-      {/* Subir PDF */}
       {estado === 'en_proceso' && (
         <label className="flex items-center gap-1.5 text-xs bg-gray-50 text-gray-600 border border-gray-200 font-semibold px-2.5 py-1.5 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
           <Upload size={12} />
@@ -93,7 +92,6 @@ export default function GestionInforme({ informeId, estadoActual, profesionalId,
         </label>
       )}
 
-      {/* Avanzar estado */}
       {estado === 'en_proceso' && archivo && (
         <button
           onClick={avanzarEstado} disabled={loading}

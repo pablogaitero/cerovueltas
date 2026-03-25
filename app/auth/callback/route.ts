@@ -15,10 +15,10 @@ export async function GET(request: Request) {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         const { data: profile } = await supabase
-  .from('profiles')
-  .select('role')
-  .eq('id', user.id)
-  .single() as { data: { role: string } | null }
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single() as { data: { role: string } | null }
 
         const dashboard = profile?.role === 'profesional' ? '/profesional' : '/cliente'
         return NextResponse.redirect(`${origin}${dashboard}`)

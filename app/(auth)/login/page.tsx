@@ -19,37 +19,40 @@ export default function LoginPage() {
 
   const supabase = createClient()
 
-async function handleLogin(e: React.FormEvent) {
-  e.preventDefault()
-  setError('')
-  setLoading(true)
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
 
-  const { error: authError, data: authData } = await supabase.auth.signInWithPassword({
-    email: email.trim().toLowerCase(),
-    password,
-  })
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    })
 
-  if (authError || !authData.user) {
-    setError('Email o contraseña incorrectos.')
-    setLoading(false)
-    return
+    if (authError) {
+      setError('Email o contraseña incorrectos.')
+      setLoading(false)
+      return
+    }
+
+    // Obtener rol para redirigir al dashboard correcto
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setLoading(false); return }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (redirect) {
+      router.push(redirect)
+    } else {
+      router.push(profile?.role === 'profesional' ? '/profesional' : '/cliente')
+    }
+
+    router.refresh()
   }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', authData.user.id)
-    .single() as { data: { role: string } | null }
-
-  if (redirect) {
-    router.push(redirect)
-  } else {
-    router.push(profile?.role === 'profesional' ? '/profesional' : '/cliente')
-  }
-
-  router.refresh()
-}
-
 
   return (
     <div className="min-h-screen flex">

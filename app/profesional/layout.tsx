@@ -11,11 +11,7 @@ export default async function ProfesionalLayout({ children }: { children: React.
   if (!user) redirect('/login')
 
   const { data: rawProfile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single()
-
+    .from('profiles').select('*').eq('id', user.id).single()
   const profile = rawProfile as unknown as Profile | null
 
   if (!profile || profile.role === 'cliente') redirect('/cliente')
@@ -25,7 +21,6 @@ export default async function ProfesionalLayout({ children }: { children: React.
     .select('rating, total_reviews, verificado')
     .eq('user_id', user.id)
     .single()
-
   const profData = rawProf as unknown as ProfData | null
 
   return (
