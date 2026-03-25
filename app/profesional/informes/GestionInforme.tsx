@@ -42,7 +42,7 @@ export default function GestionInforme({ informeId, estadoActual, profesionalId,
     setLoading(true)
     const update: Record<string, unknown> = { estado: nuevoEstado }
     if (nuevoEstado === 'entregado') update.entregado_at = new Date().toISOString()
-    const { error: err } = await supabase.from('informes').update(update).eq('id', informeId)
+    const { error: err } = await supabase.from('informes').update(update as never).eq('id', informeId)
     if (!err) { setEstado(nuevoEstado); router.refresh() }
     else setError('Error al actualizar estado.')
     setLoading(false)
