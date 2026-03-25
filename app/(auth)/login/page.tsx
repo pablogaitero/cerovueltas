@@ -1,12 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get('redirect') || null
@@ -35,12 +35,10 @@ export default function LoginPage() {
       return
     }
 
-    const userId = data.user.id
-
     const { data: rawProfile } = await supabase
       .from('profiles')
       .select('role')
-      .eq('id', userId)
+      .eq('id', data.user.id)
       .single()
 
     const profile = rawProfile as { role: string } | null
@@ -147,5 +145,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 animate-pulse" />}>
+      <LoginForm />
+    </Suspense>
   )
 }
