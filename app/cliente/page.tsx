@@ -5,19 +5,42 @@ import Topbar from '@/components/dashboard/Topbar'
 import StatCard from '@/components/dashboard/StatCard'
 import { Search, MessageSquare, FileText, ArrowRight, Star } from 'lucide-react'
 import { formatCLP, formatDate } from '@/lib/utils'
+import type { Profile } from '@/lib/supabase/types'
+
+type ConexionRow = {
+  id: string
+  estado: string
+  monto: number
+  created_at: string
+  profesionales: {
+    id: string
+    titulo: string
+    badge: string | null
+    verificado: boolean
+    profiles: { nombre: string; apellido: string | null; avatar_url: string | null }
+  } | null
+}
+
+type InformeRow = {
+  id: string
+  tipo: string
+  estado: string
+  created_at: string
+}
 
 export default async function ClienteDashboard() {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
+  const { data: rawProfile } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', user.id)
     .single()
 
-  // Stats del cliente
+  const profile = rawProfile as unknown as Profile | null
+
   const [{ count: totalConexiones }, { count: mensajesNoLeidos }, { count: totalInformes }] =
     await Promise.all([
       supabase.from('conexiones').select('*', { count: 'exact', head: true }).eq('cliente_id', user.id),
@@ -27,11 +50,10 @@ export default async function ClienteDashboard() {
       supabase.from('informes').select('*', { count: 'exact', head: true }).eq('cliente_id', user.id),
     ])
 
-  // Conexiones recientes con perfil del profesional
-  const { data: conexiones } = await supabase
+  const { data: rawConexiones } = await supabase
     .from('conexiones')
     .select(`
-      *,
+      id, estado, monto, created_at,
       profesionales (
         id, titulo, badge, verificado,
         profiles ( nombre, apellido, avatar_url )
@@ -41,16 +63,26 @@ export default async function ClienteDashboard() {
     .order('created_at', { ascending: false })
     .limit(4)
 
-  // Informes recientes
-  const { data: informes } = await supabase
+  const conexiones = (rawConexiones ?? []) as unknown as ConexionRow[]
+
+  const { data: rawInformes } = await supabase
     .from('informes')
-    .select('*')
+    .select('id, tipo, estado, created_at')
     .eq('cliente_id', user.id)
     .order('created_at', { ascending: false })
     .limit(3)
 
+  const informes = (rawInformes ?? []) as unknown as InformeRow[]
+
   const hora = new Date().getHours()
   const saludo = hora < 12 ? 'Buenos días' : hora < 19 ? 'Buenas tardes' : 'Buenas noches'
+
+  const estadoColor: Record<string, string> = {
+    pendiente: 'bg-yellow-50 text-yellow-700',
+    activa:    'bg-green-50 text-green-700',
+    pagada:    'bg-blue-50 text-blue-700',
+    cerrada:   'bg-gray-100 text-gray-500',
+  }
 
   return (
     <div>
@@ -133,7 +165,7 @@ export default async function ClienteDashboard() {
                 Ver más <ArrowRight size={12} />
               </Link>
             </div>
-            {!conexiones?.length ? (
+            {!conexiones.length ? (
               <div className="py-12 text-center">
                 <p className="text-4xl mb-3">🔍</p>
                 <p className="text-gray-400 text-sm">Aún no tienes profesionales conectados.</p>
@@ -143,20 +175,14 @@ export default async function ClienteDashboard() {
               </div>
             ) : (
               <div className="divide-y divide-gray-50">
-                {conexiones.map((c: any) => {
+                {conexiones.map(c => {
                   const prof = c.profesionales
                   if (!prof) return null
                   const nombre = `${prof.profiles.nombre} ${prof.profiles.apellido ?? ''}`.trim()
-                  const estadoColor: Record<string, string> = {
-                    pendiente: 'bg-yellow-50 text-yellow-700',
-                    activa:    'bg-green-50 text-green-700',
-                    pagada:    'bg-blue-50 text-blue-700',
-                    cerrada:   'bg-gray-100 text-gray-500',
-                  }
                   return (
                     <div key={c.id} className="flex items-center gap-3 px-5 py-3">
                       <div className="w-9 h-9 rounded-full bg-navy/10 flex items-center justify-center text-navy text-xs font-bold shrink-0">
-                        {nombre.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                        {nombre.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-800 truncate">{nombre}</p>
@@ -185,7 +211,7 @@ export default async function ClienteDashboard() {
                 Ver todos <ArrowRight size={12} />
               </Link>
             </div>
-            {!informes?.length ? (
+            {!informes.length ? (
               <div className="py-10 text-center px-4">
                 <p className="text-3xl mb-2">📄</p>
                 <p className="text-gray-400 text-xs">Sin informes aún.</p>
@@ -195,12 +221,12 @@ export default async function ClienteDashboard() {
               </div>
             ) : (
               <div className="divide-y divide-gray-50">
-                {informes.map((inf: any) => {
+                {informes.map(inf => {
                   const colorEstado: Record<string, string> = {
-                    solicitado:  'text-yellow-600',
-                    en_proceso:  'text-blue-600',
-                    entregado:   'text-green-600',
-                    cancelado:   'text-red-400',
+                    solicitado: 'text-yellow-600',
+                    en_proceso: 'text-blue-600',
+                    entregado:  'text-green-600',
+                    cancelado:  'text-red-400',
                   }
                   return (
                     <div key={inf.id} className="px-5 py-3">
