@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import ClienteSidebar from '@/components/dashboard/ClienteSidebar'
+import type { Profile } from '@/lib/supabase/types'
 
 export default async function ClienteLayout({ children }: { children: React.ReactNode }) {
   const supabase = createClient()
@@ -8,11 +9,13 @@ export default async function ClienteLayout({ children }: { children: React.Reac
 
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
+  const { data: rawProfile } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', user.id)
     .single()
+
+  const profile = rawProfile as unknown as Profile | null
 
   if (!profile || profile.role === 'profesional') redirect('/profesional')
 
