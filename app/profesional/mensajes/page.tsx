@@ -43,7 +43,7 @@ export default async function MensajesProfesionalPage({
   if (conexionActiva && mensajes?.length) {
     await supabase
       .from('mensajes')
-      .update({ leido: true })
+      .update({ leido: true } as never)
       .eq('conexion_id', conexionActiva)
       .neq('emisor_id', user.id)
   }
