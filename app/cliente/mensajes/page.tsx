@@ -2,6 +2,23 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Topbar from '@/components/dashboard/Topbar'
 import ChatWrapper from '@/components/chat/ChatWrapper'
+import type { Mensaje } from '@/lib/supabase/types'
+
+type ConexionConProfesional = {
+  id: string
+  estado: string
+  created_at: string
+  profesionales: {
+    id: string
+    titulo: string
+    badge: string | null
+    profiles: {
+      nombre: string
+      apellido: string | null
+      avatar_url: string | null
+    }
+  } | null
+}
 
 export default async function MensajesClientePage({
   searchParams,
@@ -12,8 +29,7 @@ export default async function MensajesClientePage({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // Traer todas las conexiones activas del cliente con datos del profesional
-  const { data: conexiones } = await supabase
+  const { data: rawConexiones } = await supabase
     .from('conexiones')
     .select(`
       id, estado, created_at,
@@ -26,10 +42,11 @@ export default async function MensajesClientePage({
     .in('estado', ['activa', 'pagada'])
     .order('created_at', { ascending: false })
 
+  const conexiones = (rawConexiones ?? []) as unknown as ConexionConProfesional[]
+
   const conexionActiva = searchParams.conexion ?? conexiones?.[0]?.id ?? null
 
-  // Mensajes de la conexión activa
-  const { data: mensajes } = conexionActiva
+  const { data: rawMensajes } = conexionActiva
     ? await supabase
         .from('mensajes')
         .select('*')
@@ -37,8 +54,9 @@ export default async function MensajesClientePage({
         .order('created_at', { ascending: true })
     : { data: [] }
 
-  // Marcar mensajes como leídos
-  if (conexionActiva && mensajes?.length) {
+  const mensajes = (rawMensajes ?? []) as unknown as Mensaje[]
+
+  if (conexionActiva && mensajes.length) {
     await supabase
       .from('mensajes')
       .update({ leido: true })
@@ -51,8 +69,8 @@ export default async function MensajesClientePage({
       <Topbar title="Mensajes" subtitle="Conversaciones con tus profesionales" />
       <div className="flex flex-1 overflow-hidden">
         <ChatWrapper
-          conexiones={conexiones ?? []}
-          mensajes={mensajes ?? []}
+          conexiones={conexiones}
+          mensajes={mensajes}
           conexionActivaId={conexionActiva}
           userId={user.id}
           userRole="cliente"
