@@ -4,17 +4,23 @@ import Topbar from '@/components/dashboard/Topbar'
 import SolicitarInforme from './SolicitarInforme'
 import { formatCLP, formatDate } from '@/lib/utils'
 import { Download, FileText } from 'lucide-react'
+import type { TipoInforme, EstadoInforme } from '@/lib/supabase/types'
+
+type InformeRow = {
+  id: string; tipo: TipoInforme; estado: EstadoInforme
+  precio: number; titulo: string | null; archivo_url: string | null; created_at: string
+}
 
 export default async function InformesPage() {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: informes } = await supabase
-    .from('informes')
-    .select('*')
+  const { data: rawInformes } = await supabase
+    .from('informes').select('id, tipo, estado, precio, titulo, archivo_url, created_at')
     .eq('cliente_id', user.id)
     .order('created_at', { ascending: false })
+  const informes = (rawInformes ?? []) as unknown as InformeRow[]
 
   const estadoStyle: Record<string, string> = {
     solicitado: 'bg-yellow-50 text-yellow-700 border-yellow-200',
@@ -28,40 +34,18 @@ export default async function InformesPage() {
       <Topbar title="Mis Informes" subtitle="Historial de informes financieros solicitados" />
       <div className="p-8 space-y-8">
 
-        {/* Planes */}
         <div>
           <h2 className="font-display text-lg text-navy mb-4">Solicitar nuevo informe</h2>
           <div className="grid grid-cols-3 gap-4">
             {[
-              {
-                tipo: 'basico' as const,
-                label: 'Básico',
-                precio: 49900,
-                dias: '5-7',
-                items: ['Balance general', 'Estado de resultados', 'Flujo de caja básico', 'Entrega PDF'],
-              },
-              {
-                tipo: 'completo' as const,
-                label: 'Completo',
-                precio: 129900,
-                dias: '3-5',
-                popular: true,
-                items: ['Todo lo del Básico', 'Análisis de ratios', 'Comparativo anual', 'IFRS básico', 'Reunión incluida'],
-              },
-              {
-                tipo: 'premium' as const,
-                label: 'Premium',
-                precio: 249900,
-                dias: '2-3',
-                items: ['Todo lo del Completo', 'Auditoría interna', 'Due diligence', 'Proyecciones 12 meses', 'Soporte 30 días'],
-              },
+              { tipo: 'basico' as TipoInforme, label: 'Básico', precio: 49900, dias: '5-7',
+                items: ['Balance general', 'Estado de resultados', 'Flujo de caja básico', 'Entrega PDF'] },
+              { tipo: 'completo' as TipoInforme, label: 'Completo', precio: 129900, dias: '3-5', popular: true,
+                items: ['Todo lo del Básico', 'Análisis de ratios', 'Comparativo anual', 'IFRS básico', 'Reunión incluida'] },
+              { tipo: 'premium' as TipoInforme, label: 'Premium', precio: 249900, dias: '2-3',
+                items: ['Todo lo del Completo', 'Auditoría interna', 'Due diligence', 'Proyecciones 12 meses', 'Soporte 30 días'] },
             ].map(plan => (
-              <div
-                key={plan.tipo}
-                className={`bg-white rounded-xl border-2 p-6 relative ${
-                  plan.popular ? 'border-gold' : 'border-gray-100'
-                }`}
-              >
+              <div key={plan.tipo} className={`bg-white rounded-xl border-2 p-6 relative ${plan.popular ? 'border-gold' : 'border-gray-100'}`}>
                 {plan.popular && (
                   <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gold text-white text-xs font-bold px-3 py-0.5 rounded-full">
                     Más popular
@@ -83,10 +67,9 @@ export default async function InformesPage() {
           </div>
         </div>
 
-        {/* Historial */}
         <div>
           <h2 className="font-display text-lg text-navy mb-4">Historial</h2>
-          {!informes?.length ? (
+          {!informes.length ? (
             <div className="bg-white rounded-xl border border-gray-100 py-12 text-center">
               <FileText size={36} className="text-gray-200 mx-auto mb-3" />
               <p className="text-gray-400 text-sm">Aún no has solicitado informes.</p>
@@ -96,15 +79,13 @@ export default async function InformesPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-50">
-                    <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-6 py-3">Tipo</th>
-                    <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-6 py-3">Estado</th>
-                    <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-6 py-3">Precio</th>
-                    <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-6 py-3">Fecha</th>
-                    <th className="px-6 py-3" />
+                    {['Tipo', 'Estado', 'Precio', 'Fecha', ''].map(h => (
+                      <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-6 py-3">{h}</th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {informes.map((inf: any) => (
+                  {informes.map(inf => (
                     <tr key={inf.id} className="hover:bg-gray-50/50 transition-colors">
                       <td className="px-6 py-4">
                         <span className="font-medium text-navy capitalize">{inf.tipo}</span>
@@ -119,12 +100,8 @@ export default async function InformesPage() {
                       <td className="px-6 py-4 text-gray-400 text-xs">{formatDate(inf.created_at)}</td>
                       <td className="px-6 py-4">
                         {inf.archivo_url && (
-                          <a
-                            href={inf.archivo_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 text-gold text-xs font-semibold hover:underline"
-                          >
+                          <a href={inf.archivo_url} target="_blank" rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 text-gold text-xs font-semibold hover:underline">
                             <Download size={13} /> Descargar
                           </a>
                         )}
@@ -136,6 +113,7 @@ export default async function InformesPage() {
             </div>
           )}
         </div>
+
       </div>
     </div>
   )

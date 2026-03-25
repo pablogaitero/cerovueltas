@@ -4,36 +4,39 @@ import Topbar from '@/components/dashboard/Topbar'
 import GestionInforme from './GestionInforme'
 import { formatCLP, formatDate } from '@/lib/utils'
 import { FileText } from 'lucide-react'
+import type { EstadoInforme, TipoInforme } from '@/lib/supabase/types'
+
+type InformeRow = {
+  id: string; tipo: TipoInforme; estado: EstadoInforme; precio: number
+  titulo: string | null; archivo_url: string | null; created_at: string
+  profesional_id: string | null
+  profiles: { nombre: string; apellido: string | null; empresa: string | null; email: string } | null
+}
 
 export default async function InformesProfesionalPage() {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profesional } = await supabase
-    .from('profesionales').select('id').eq('user_id', user.id).single()
+  const { data: rawProfesional } = await supabase.from('profesionales').select('id').eq('user_id', user.id).single()
+  const profesional = rawProfesional as unknown as { id: string } | null
   if (!profesional) redirect('/profesional/perfil')
 
-  const { data: informes } = await supabase
+  const { data: rawInformes } = await supabase
     .from('informes')
-    .select(`
-      *,
-      profiles!informes_cliente_id_fkey ( nombre, apellido, empresa, email )
-    `)
+    .select(`*, profiles!informes_cliente_id_fkey ( nombre, apellido, empresa, email )`)
     .eq('profesional_id', profesional.id)
     .order('created_at', { ascending: false })
+  const informes = (rawInformes ?? []) as unknown as InformeRow[]
 
-  // Informes sin profesional asignado (disponibles para tomar)
-  const { data: disponibles } = await supabase
+  const { data: rawDisponibles } = await supabase
     .from('informes')
-    .select(`
-      *,
-      profiles!informes_cliente_id_fkey ( nombre, apellido, empresa )
-    `)
+    .select(`*, profiles!informes_cliente_id_fkey ( nombre, apellido, empresa )`)
     .is('profesional_id', null)
     .eq('estado', 'solicitado')
     .order('created_at', { ascending: false })
     .limit(10)
+  const disponibles = (rawDisponibles ?? []) as unknown as InformeRow[]
 
   const estadoStyle: Record<string, string> = {
     solicitado: 'bg-yellow-50 text-yellow-700 border-yellow-200',
@@ -42,22 +45,19 @@ export default async function InformesProfesionalPage() {
     cancelado:  'bg-gray-100 text-gray-500  border-gray-200',
   }
 
-  const totalIngresos = informes
-    ?.filter(i => i.estado === 'entregado')
-    .reduce((acc, i) => acc + i.precio, 0) ?? 0
+  const totalIngresos = informes.filter(i => i.estado === 'entregado').reduce((acc, i) => acc + i.precio, 0)
 
   return (
     <div>
       <Topbar title="Informes" subtitle="Gestiona los informes asignados y disponibles" />
       <div className="p-8 space-y-8">
 
-        {/* Stats */}
         <div className="grid grid-cols-4 gap-4 text-sm">
           {[
-            { label: 'Solicitados',  count: informes?.filter(i=>i.estado==='solicitado').length  ?? 0, color: 'text-yellow-600' },
-            { label: 'En proceso',   count: informes?.filter(i=>i.estado==='en_proceso').length  ?? 0, color: 'text-blue-600' },
-            { label: 'Entregados',   count: informes?.filter(i=>i.estado==='entregado').length   ?? 0, color: 'text-green-600' },
-            { label: 'Ingresos',     count: formatCLP(totalIngresos),                                 color: 'text-gold' },
+            { label: 'Solicitados',  count: informes.filter(i=>i.estado==='solicitado').length,  color: 'text-yellow-600' },
+            { label: 'En proceso',   count: informes.filter(i=>i.estado==='en_proceso').length,  color: 'text-blue-600' },
+            { label: 'Entregados',   count: informes.filter(i=>i.estado==='entregado').length,   color: 'text-green-600' },
+            { label: 'Ingresos',     count: formatCLP(totalIngresos),                            color: 'text-gold' },
           ].map(s => (
             <div key={s.label} className="bg-white rounded-xl border border-gray-100 p-5">
               <p className="text-gray-400 text-xs mb-1">{s.label}</p>
@@ -66,15 +66,14 @@ export default async function InformesProfesionalPage() {
           ))}
         </div>
 
-        {/* Informes disponibles para tomar */}
-        {!!disponibles?.length && (
+        {!!disponibles.length && (
           <div className="bg-white rounded-xl border-2 border-gold/30 overflow-hidden">
             <div className="flex items-center gap-2 px-6 py-4 border-b border-gold/20 bg-gold/5">
               <span className="text-gold font-bold text-sm">⚡ Nuevos informes disponibles</span>
               <span className="text-xs text-gold/70">({disponibles.length} sin asignar)</span>
             </div>
             <div className="divide-y divide-gray-50">
-              {disponibles.map((inf: any) => (
+              {disponibles.map(inf => (
                 <div key={inf.id} className="flex items-center gap-4 px-6 py-4">
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-navy text-sm capitalize">{inf.tipo}
@@ -85,25 +84,18 @@ export default async function InformesProfesionalPage() {
                     </p>
                   </div>
                   <p className="text-gray-400 text-xs shrink-0">{formatDate(inf.created_at)}</p>
-                  <GestionInforme
-                    informeId={inf.id}
-                    estadoActual={inf.estado}
-                    profesionalId={profesional.id}
-                    archivoUrl={inf.archivo_url}
-                    modo="tomar"
-                  />
+                  <GestionInforme informeId={inf.id} estadoActual={inf.estado} profesionalId={profesional.id} archivoUrl={inf.archivo_url} modo="tomar" />
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* Mis informes asignados */}
         <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-50">
             <h2 className="font-semibold text-navy text-sm">Mis Informes Asignados</h2>
           </div>
-          {!informes?.length ? (
+          {!informes.length ? (
             <div className="py-14 text-center">
               <FileText size={36} className="text-gray-200 mx-auto mb-3" />
               <p className="text-gray-400 text-sm">Aún no tienes informes asignados.</p>
@@ -118,15 +110,13 @@ export default async function InformesProfesionalPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {informes.map((inf: any) => (
+                {informes.map(inf => (
                   <tr key={inf.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="px-6 py-4">
                       <p className="font-medium text-gray-800">{inf.profiles?.nombre} {inf.profiles?.apellido}</p>
                       <p className="text-xs text-gray-400">{inf.profiles?.empresa ?? '—'}</p>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className="font-medium text-navy capitalize">{inf.tipo}</span>
-                    </td>
+                    <td className="px-6 py-4"><span className="font-medium text-navy capitalize">{inf.tipo}</span></td>
                     <td className="px-6 py-4">
                       <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${estadoStyle[inf.estado]}`}>
                         {inf.estado.replace('_',' ')}
@@ -135,13 +125,7 @@ export default async function InformesProfesionalPage() {
                     <td className="px-6 py-4 font-medium text-gray-700">{formatCLP(inf.precio)}</td>
                     <td className="px-6 py-4 text-gray-400 text-xs">{formatDate(inf.created_at)}</td>
                     <td className="px-6 py-4">
-                      <GestionInforme
-                        informeId={inf.id}
-                        estadoActual={inf.estado}
-                        profesionalId={profesional.id}
-                        archivoUrl={inf.archivo_url}
-                        modo="gestionar"
-                      />
+                      <GestionInforme informeId={inf.id} estadoActual={inf.estado} profesionalId={profesional.id} archivoUrl={inf.archivo_url} modo="gestionar" />
                     </td>
                   </tr>
                 ))}
