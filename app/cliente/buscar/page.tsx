@@ -2,32 +2,9 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Topbar from '@/components/dashboard/Topbar'
 import BuscarCliente from './BuscarCliente'
+import type { ProfesionalConPerfil } from '@/lib/supabase/types'
 
 interface SearchParams { q?: string; esp?: string; disponible?: string }
-
-type ProfesionalRow = {
-  id: string
-  user_id: string
-  titulo: string
-  bio: string | null
-  badge: string | null
-  rating: number
-  total_reviews: number
-  disponible: boolean
-  verificado: boolean
-  tarifa_hora: number | null
-  especialidades: string[]
-  anos_exp: number
-  linkedin_url: string | null
-  created_at: string
-  updated_at: string
-  profiles: {
-    nombre: string
-    apellido: string | null
-    avatar_url: string | null
-    email: string
-  }
-}
 
 type ConexionRow = { profesional_id: string }
 
@@ -52,7 +29,7 @@ export default async function BuscarPage({ searchParams }: { searchParams: Searc
   }
 
   const { data: rawProfesionales } = await query
-  const profesionales = (rawProfesionales ?? []) as unknown as ProfesionalRow[]
+  const profesionales = (rawProfesionales ?? []) as unknown as ProfesionalConPerfil[]
 
   const q = searchParams.q?.toLowerCase() ?? ''
   const filtered = q
@@ -81,7 +58,11 @@ export default async function BuscarPage({ searchParams }: { searchParams: Searc
           profesionales={filtered}
           clienteId={user.id}
           conectadosSet={Array.from(conectadosSet)}
-          filtrosActivos={{ q: searchParams.q, esp: searchParams.esp, disponible: searchParams.disponible }}
+          filtrosActivos={{
+            q: searchParams.q,
+            esp: searchParams.esp,
+            disponible: searchParams.disponible,
+          }}
         />
       </div>
     </div>
