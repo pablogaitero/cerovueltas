@@ -9,13 +9,13 @@ import { Eye, EyeOff, Loader2 } from 'lucide-react'
 export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirect = searchParams.get('redirect') || null
+  const redirectTo = searchParams.get('redirect') || null
 
-  const [email, setEmail] = useState('')
+  const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
   const [showPass, setShowPass] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [loading,  setLoading]  = useState(false)
+  const [error,    setError]    = useState('')
 
   const supabase = createClient()
 
@@ -24,44 +24,37 @@ export default function LoginPage() {
     setError('')
     setLoading(true)
 
-    const { error: authError } = await supabase.auth.signInWithPassword({
-      email: email.trim().toLowerCase(),
+    const { error: authError, data } = await supabase.auth.signInWithPassword({
+      email:    email.trim().toLowerCase(),
       password,
     })
 
-    if (authError) {
+    if (authError || !data.user) {
       setError('Email o contraseña incorrectos.')
       setLoading(false)
       return
     }
 
-    // Obtener rol para redirigir al dashboard correcto
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { setLoading(false); return }
+    const userId = data.user.id
 
-   const { data: rawProfile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', authData.user.id)
-    .single()
+    const { data: rawProfile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .single()
 
-   const profile = rawProfile as { role: string } | null
-   const destino = profile?.role === 'profesional' ? '/profesional' : '/cliente'
+    const profile = rawProfile as { role: string } | null
+    const destino = profile?.role === 'profesional' ? '/profesional' : '/cliente'
 
-    if (redirect) {
-      router.push(redirect)
-    } else {
-      router.push(destino)
-    }
-
+    router.push(redirectTo ?? destino)
     router.refresh()
   }
 
   return (
     <div className="min-h-screen flex">
-      {/* Panel izquierdo — decorativo */}
+      {/* Panel izquierdo */}
       <div className="hidden lg:flex lg:w-1/2 bg-navy flex-col justify-between p-12">
-        <Link href="/" className="block">
+        <Link href="/">
           <img src="/logo.png" alt="Cerovueltas" className="h-12" />
         </Link>
         <div>
@@ -83,10 +76,9 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Panel derecho — formulario */}
+      {/* Panel derecho */}
       <div className="flex-1 flex items-center justify-center p-8 bg-gray-50">
         <div className="w-full max-w-md">
-          {/* Logo móvil */}
           <Link href="/" className="block lg:hidden mb-8 text-center">
             <img src="/logo.png" alt="Cerovueltas" className="h-10 mx-auto" />
           </Link>
@@ -108,24 +100,18 @@ export default function LoginPage() {
 
             <form onSubmit={handleLogin} className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Email
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
                 <input
-                  type="email"
-                  value={email}
+                  type="email" value={email}
                   onChange={e => setEmail(e.target.value)}
                   placeholder="tucorreo@empresa.cl"
-                  required
-                  className="input-field"
+                  required className="input-field"
                 />
               </div>
 
               <div>
                 <div className="flex justify-between items-center mb-1.5">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Contraseña
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700">Contraseña</label>
                   <Link href="/recuperar-password" className="text-xs text-gold hover:underline">
                     ¿Olvidaste tu contraseña?
                   </Link>
@@ -133,15 +119,11 @@ export default function LoginPage() {
                 <div className="relative">
                   <input
                     type={showPass ? 'text' : 'password'}
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                    className="input-field pr-10"
+                    value={password} onChange={e => setPassword(e.target.value)}
+                    placeholder="••••••••" required className="input-field pr-10"
                   />
                   <button
-                    type="button"
-                    onClick={() => setShowPass(!showPass)}
+                    type="button" onClick={() => setShowPass(!showPass)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
                     {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -150,8 +132,7 @@ export default function LoginPage() {
               </div>
 
               <button
-                type="submit"
-                disabled={loading}
+                type="submit" disabled={loading}
                 className="btn-gold w-full flex items-center justify-center gap-2 py-3"
               >
                 {loading && <Loader2 size={16} className="animate-spin" />}
