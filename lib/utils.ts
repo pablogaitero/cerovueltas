@@ -24,7 +24,7 @@ export function formatDate(date: string): string {
 export function getInitials(nombre: string, apellido?: string | null): string {
   const first = nombre?.[0]?.toUpperCase() ?? ''
   const last = apellido?.[0]?.toUpperCase() ?? ''
-  return first + last || nombre?.slice(0, 2).toUpperCase() ?? 'CV'
+  return (first + last) || (nombre?.slice(0, 2).toUpperCase() ?? 'CV')
 }
 
 export const ESPECIALIDAD_LABELS: Record<string, string> = {
