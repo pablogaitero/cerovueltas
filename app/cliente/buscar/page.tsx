@@ -26,7 +26,27 @@ export default async function BuscarPage({ searchParams }: { searchParams: Searc
     query = query.eq('disponible', true)
   }
 
-  const { data: profesionales } = await query
+const { data: profesionales } = await query as {
+  data: Array<{
+    id: string
+    titulo: string
+    bio: string | null
+    badge: string | null
+    rating: number
+    total_reviews: number
+    disponible: boolean
+    verificado: boolean
+    tarifa_hora: number | null
+    especialidades: string[]
+    anos_exp: number
+    user_id: string
+    linkedin_url: string | null
+    created_at: string
+    updated_at: string
+    profiles: { nombre: string; apellido: string | null; avatar_url: string | null; email: string }
+  }> | null
+} 
+
 
   // Filtrar por texto si hay búsqueda (en memoria — para full-text usar pg_trgm)
   const q = searchParams.q?.toLowerCase() ?? ''
