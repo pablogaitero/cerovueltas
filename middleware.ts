@@ -29,14 +29,13 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
-  // Rutas protegidas
   const protectedRoutes = ['/cliente', '/profesional']
   const authRoutes = ['/login', '/registro']
 
   const isProtected = protectedRoutes.some(r => pathname.startsWith(r))
   const isAuthRoute = authRoutes.some(r => pathname.startsWith(r))
 
-  // Sin sesión → redirigir a login
+  // Sin sesión intentando ruta protegida → login
   if (isProtected && !user) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
@@ -44,16 +43,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Con sesión → redirigir según rol si intenta ir a login/registro
+  // Con sesión en ruta de auth → redirigir a dashboard
+  // IMPORTANTE: no leer perfil aquí para evitar loops
   if (isAuthRoute && user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
     const url = request.nextUrl.clone()
-    url.pathname = profile?.role === 'profesional' ? '/profesional' : '/cliente'
+    url.pathname = '/cliente' // el layout de cada dashboard maneja la redirección final
     return NextResponse.redirect(url)
   }
 
