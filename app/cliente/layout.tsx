@@ -17,11 +17,25 @@ export default async function ClienteLayout({ children }: { children: React.Reac
 
   const profile = rawProfile as unknown as Profile | null
 
-  if (!profile || profile.role === 'profesional') redirect('/profesional')
+  // NO redirigir si no hay perfil — evita loop
+  const fallbackProfile: Profile = {
+    id: user.id,
+    role: 'cliente',
+    nombre: user.email?.split('@')[0] ?? 'Usuario',
+    apellido: null,
+    email: user.email ?? '',
+    telefono: null,
+    empresa: null,
+    rut: null,
+    avatar_url: null,
+    ciudad: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <ClienteSidebar profile={profile} />
+      <ClienteSidebar profile={profile ?? fallbackProfile} />
       <main className="flex-1 overflow-y-auto">
         {children}
       </main>
