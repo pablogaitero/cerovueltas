@@ -15,11 +15,17 @@ export function createClient() {
         },
         setAll(cookiesToSet) {
           try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, {
+                ...options,
+                // Forzar cookies seguras en producción
+                sameSite: 'lax',
+                secure: process.env.NODE_ENV === 'production',
+                httpOnly: true,
+              })
+            })
           } catch {
-            // Server Component — ignorar si no se puede setear
+            // ignorar en Server Components
           }
         },
       },

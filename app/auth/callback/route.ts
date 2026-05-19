@@ -1,26 +1,55 @@
-import { createClient } from '@/lib/supabase/server'
-import { NextResponse } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
+import { cookies } from 'next/headers'
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/'
 
   if (code) {
-    const supabase = createClient()
+    const cookieStore = cookies()
+
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, {
+                ...options,
+                sameSite: 'lax',
+                secure: process.env.NODE_ENV === 'production',
+                httpOnly: true,
+              })
+            })
+          },
+        },
+      }
+    )
+
     const { error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error) {
-      // Obtener rol y redirigir al dashboard correcto
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        const { data: profile } = await supabase
+        const { data: rawProfile } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', user.id)
-          .single() as { data: { role: string } | null }
+          .single()
 
-        const dashboard = profile?.role === 'profesional' ? '/profesional' : '/cliente'
+        const profile = rawProfile as { role: string } | null
+        const role = profile?.role ?? 'cliente'
+
+        const dashboard =
+          role === 'profesional' ? '/profesional'
+          : role === 'admin'     ? '/admin'
+          : '/cliente'
+
         return NextResponse.redirect(`${origin}${dashboard}`)
       }
     }
