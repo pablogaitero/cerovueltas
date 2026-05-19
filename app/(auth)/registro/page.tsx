@@ -164,14 +164,19 @@ export default function RegistroPage() {
 
             {/* Selector de rol */}
             <div className="grid grid-cols-2 gap-2 mb-7 p-1 bg-gray-100 rounded-lg">
-              {(['cliente', 'profesional'] as UserRole[]).map(r => (
-                <button key={r} type="button" onClick={() => setRole(r)}
-                  className={`py-2.5 rounded-md text-sm font-semibold transition-all ${
-                    role === r ? 'bg-navy text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                  }`}>
-                  {r === 'cliente' ? '🏢 Soy PYME' : '👤 Soy Profesional'}
-                </button>
-              ))}
+              <button
+                type="button"
+                onClick={() => setRole('cliente')}
+                className={`py-2.5 rounded-md text-sm font-semibold transition-all ${
+                  role === 'cliente' ? 'bg-navy text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`}>
+                🏢 Soy PYME
+              </button>
+              <Link
+                href="/registro/profesional"
+                className="py-2.5 rounded-md text-sm font-semibold text-gray-500 hover:text-gray-700 text-center transition-all hover:bg-white/50">
+                👤 Soy Profesional
+              </Link>
             </div>
 
             {error && (
