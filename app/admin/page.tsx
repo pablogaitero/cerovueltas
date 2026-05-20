@@ -26,6 +26,12 @@ export default async function AdminDashboard() {
   const { data: { user } } = await supabase.auth.getUser()
   //if (!user) redirect('/login')
 
+  const { data: test, error: testErr } = await supabase
+  .from('profesionales')
+  .select('count')
+
+console.log('TEST:', test, testErr)
+
   // Stats simples — queries separadas sin joins
   /*const { count: totalProfesionales } = await supabase
     .from('profesionales')
