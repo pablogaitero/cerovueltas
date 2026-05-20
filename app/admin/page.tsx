@@ -35,13 +35,7 @@ const { data: testData, error: testError } = await supabase
 
 console.log('ADMIN CLIENT TEST:', JSON.stringify({ testData, testError }))
 
-const { data: testData, error: testError } = await supabase
-  .from('profiles')
-  .select('id')
-  .limit(1)
   
-console.log('TEST PROFILES:', JSON.stringify(testData), JSON.stringify(testError))
-
   // Stats simples — queries separadas sin joins
   /*const { count: totalProfesionales } = await supabase
     .from('profesionales')
@@ -68,6 +62,14 @@ console.log('TEST PROFILES:', JSON.stringify(testData), JSON.stringify(testError
 
   console.log('PROF:', totalProfesionales, err1)
   console.log('CLIENTES:', totalClientes, err2)
+
+const { data: testD, error: testE } = await supabase
+  .from('profiles')
+  .select('id')
+  .limit(1)
+  
+console.log('TEST PROFILES:', JSON.stringify(testD), JSON.stringify(testE))
+
 
   const { count: totalConexiones } = await supabase
     .from('conexiones')
