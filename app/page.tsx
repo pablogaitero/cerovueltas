@@ -7,6 +7,7 @@ export default async function Home() {
 
   if (!user) redirect('/login')
 
+  // Intentar leer perfil
   const { data: rawProfile } = await supabase
     .from('profiles')
     .select('role')
@@ -14,7 +15,11 @@ export default async function Home() {
     .single()
 
   const profile = rawProfile as { role: string } | null
-  const role = profile?.role ?? 'cliente'
+
+  // Si no puede leer el perfil, usar metadata del usuario
+  const role = profile?.role 
+    ?? (user.user_metadata?.role as string | undefined)
+    ?? 'cliente'
 
   if (role === 'admin')       redirect('/admin')
   if (role === 'profesional') redirect('/profesional')
