@@ -42,7 +42,10 @@ function LoginForm() {
       .single()
 
     const profile = rawProfile as { role: string } | null
-    const destino = profile?.role === 'profesional' ? '/profesional' : '/cliente'
+    const destino = 
+    profile?.role === 'profesional' ? '/profesional' :
+    profile?.role === 'admin'       ? '/admin' :
+    '/cliente'
 
     router.push(redirectTo ?? destino)
     router.refresh()
