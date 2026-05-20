@@ -2,20 +2,21 @@ import { createClient } from '@supabase/supabase-js'
 
 export function createAdminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY 
-    || process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY
-    || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
-  console.log('ADMIN KEY TYPE:', 
-    process.env.SUPABASE_SERVICE_ROLE_KEY ? 'service_role' :
-    process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY ? 'next_public_service' :
-    'anon_fallback'
-  )
+  const key = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY!
 
   return createClient(url, key, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
+      detectSessionInUrl: false,
+    },
+    db: {
+      schema: 'public',
+    },
+    global: {
+      headers: {
+        Authorization: `Bearer ${key}`,
+      },
     },
   })
 }
