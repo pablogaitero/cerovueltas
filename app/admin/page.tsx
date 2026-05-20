@@ -1,5 +1,5 @@
 //import { createClient } from '@/lib/supabase/server'
-import { createAdminClient as createClient } from '@/lib/supabase/admin'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Topbar from '@/components/dashboard/Topbar'
@@ -22,15 +22,15 @@ type ProfileRow = {
 }
 
 export default async function AdminDashboard() {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  //if (!user) redirect('/login')
+ const supabase = createAdminClient()
 
-  const { data: test, error: testErr } = await supabase
+// Agregar esto justo después:
+const { data: testData, error: testError } = await supabase
   .from('profesionales')
-  .select('count')
+  .select('id')
+  .limit(1)
 
-console.log('TEST:', test, testErr)
+console.log('ADMIN CLIENT TEST:', JSON.stringify({ testData, testError }))
 
   // Stats simples — queries separadas sin joins
   /*const { count: totalProfesionales } = await supabase
