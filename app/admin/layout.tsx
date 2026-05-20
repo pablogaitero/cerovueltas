@@ -4,11 +4,11 @@ import AdminSidebar from '@/components/dashboard/AdminSidebar'
 import type { Profile } from '@/lib/supabase/types'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  //const supabase = createClient()
+  //const { data: { user } } = await supabase.auth.getUser()
 
   // Sin sesión → login
-  if (!user) redirect('/login')
+  //if (!user) redirect('/login')
 
   const { data: rawProfile } = await supabase
     .from('profiles').select('*').eq('id', user.id).single()
