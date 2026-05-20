@@ -35,13 +35,15 @@ function LoginForm() {
       return
     }
 
-    const { data: rawProfile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', data.user.id)
-      .single()
+    const { data: rawProfile, error: profileError } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', data.user.id)
+    .single()
 
     const profile = rawProfile as { role: string } | null
+    console.log('PROFILE:', profile, 'ERROR:', profileError)
+
     const destino = 
     profile?.role === 'profesional' ? '/profesional' :
     profile?.role === 'admin'       ? '/admin' :
