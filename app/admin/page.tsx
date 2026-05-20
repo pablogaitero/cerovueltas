@@ -24,7 +24,7 @@ type ProfileRow = {
 export default async function AdminDashboard() {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  //if (!user) redirect('/login')
 
   // Stats simples — queries separadas sin joins
   /*const { count: totalProfesionales } = await supabase
