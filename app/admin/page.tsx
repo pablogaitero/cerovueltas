@@ -26,19 +26,31 @@ export default async function AdminDashboard() {
   if (!user) redirect('/login')
 
   // Stats simples — queries separadas sin joins
-  const { count: totalProfesionales } = await supabase
+  /*const { count: totalProfesionales } = await supabase
     .from('profesionales')
-    .select('*', { count: 'exact', head: true })
+    .select('*', { count: 'exact', head: true })*/
+
+  const { count: totalProfesionales, error: err1 } = await supabase
+  .from('profesionales')
+  .select('*', { count: 'exact', head: true })
 
   const { count: profesionalesPendientes } = await supabase
     .from('profesionales')
     .select('*', { count: 'exact', head: true })
     .eq('verificado', false)
 
-  const { count: totalClientes } = await supabase
+  /*const { count: totalClientes } = await supabase
     .from('profiles')
     .select('*', { count: 'exact', head: true })
     .eq('role', 'cliente')
+  */
+  const { count: totalClientes, error: err2 } = await supabase
+  .from('profiles')
+  .select('*', { count: 'exact', head: true })
+  .eq('role', 'cliente')
+
+  console.log('PROF:', totalProfesionales, err1)
+  console.log('CLIENTES:', totalClientes, err2)
 
   const { count: totalConexiones } = await supabase
     .from('conexiones')
