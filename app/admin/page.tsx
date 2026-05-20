@@ -1,4 +1,5 @@
-import { createClient } from '@/lib/supabase/server'
+//import { createClient } from '@/lib/supabase/server'
+import { createAdminClient as createClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Topbar from '@/components/dashboard/Topbar'
