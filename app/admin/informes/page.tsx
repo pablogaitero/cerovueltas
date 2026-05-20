@@ -3,6 +3,9 @@ import Topbar from '@/components/dashboard/Topbar'
 import { formatCLP, formatDate } from '@/lib/utils'
 import { FileText } from 'lucide-react'
 
+export const revalidate = 0
+export const dynamic = 'force-dynamic'
+
 type InformeAdmin = {
   id: string; tipo: string; estado: string; precio: number
   created_at: string; entregado_at: string | null

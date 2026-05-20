@@ -4,6 +4,9 @@ import VerificarBtn from './VerificarBtn'
 import { CheckCircle, XCircle } from 'lucide-react'
 import { formatDate, ESPECIALIDAD_LABELS } from '@/lib/utils'
 
+export const revalidate = 0
+export const dynamic = 'force-dynamic'
+
 type ProfesionalAdmin = {
   id: string; titulo: string; badge: string | null
   especialidades: string[]; verificado: boolean

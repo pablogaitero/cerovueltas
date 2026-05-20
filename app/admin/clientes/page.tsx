@@ -3,6 +3,9 @@ import Topbar from '@/components/dashboard/Topbar'
 import { formatDate, formatCLP } from '@/lib/utils'
 import { Users } from 'lucide-react'
 
+export const revalidate = 0
+export const dynamic = 'force-dynamic'
+
 type ClienteAdmin = {
   id: string; nombre: string; apellido: string | null
   email: string; empresa: string | null; rut_empresa: string | null
