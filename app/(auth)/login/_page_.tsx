@@ -1,13 +1,15 @@
 'use client'
 
 import { Suspense, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 
 function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get('redirect') || null
 
   const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
@@ -22,19 +24,32 @@ function LoginForm() {
     setError('')
     setLoading(true)
 
-    const { error: authError } = await supabase.auth.signInWithPassword({
+    const { error: authError, data } = await supabase.auth.signInWithPassword({
       email:    email.trim().toLowerCase(),
       password,
     })
 
-    if (authError) {
+    if (authError || !data.user) {
       setError('Email o contraseña incorrectos.')
       setLoading(false)
       return
     }
 
-    // Redirigir a / — app/page.tsx maneja la redirección según rol
-    router.push('/')
+    const { data: rawProfile, error: profileError } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', data.user.id)
+    .single()
+
+    const profile = rawProfile as { role: string } | null
+    console.log('PROFILE:', profile, 'ERROR:', profileError)
+
+    const destino = 
+    profile?.role === 'profesional' ? '/profesional' :
+    profile?.role === 'admin'       ? '/admin' :
+    '/cliente'
+
+    router.push(redirectTo ?? destino)
     router.refresh()
   }
 
