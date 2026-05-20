@@ -1,5 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+import { createAdminClient } from '@/lib/supabase/admin'
 import Topbar from '@/components/dashboard/Topbar'
 import { formatCLP, formatDate } from '@/lib/utils'
 import { FileText } from 'lucide-react'
@@ -7,25 +6,40 @@ import { FileText } from 'lucide-react'
 type InformeAdmin = {
   id: string; tipo: string; estado: string; precio: number
   created_at: string; entregado_at: string | null
-  cliente:      { nombre: string; apellido: string | null; empresa: string | null } | null
-  profesional:  { titulo: string; profiles: { nombre: string; apellido: string | null } | null } | null
+  cliente_id: string; profesional_id: string | null
 }
 
+type ProfileRow = { id: string; nombre: string; apellido: string | null; empresa: string | null }
+type ProfRow = { id: string; titulo: string; user_id: string }
+
 export default async function AdminInformesPage() {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const supabase = createAdminClient()
 
   const { data: rawInformes } = await supabase
     .from('informes')
-    .select(`
-      id, tipo, estado, precio, created_at, entregado_at,
-      cliente:profiles!informes_cliente_id_fkey ( nombre, apellido, empresa ),
-      profesional:profesionales ( titulo, profiles!profesionales_user_id_fkey ( nombre, apellido ) )
-    `)
+    .select('id, tipo, estado, precio, created_at, entregado_at, cliente_id, profesional_id')
     .order('created_at', { ascending: false })
-
   const informes = (rawInformes ?? []) as unknown as InformeAdmin[]
+
+  // Obtener perfiles de clientes
+  const clienteIds = [...new Set(informes.map(i => i.cliente_id))]
+  const { data: rawClientes } = clienteIds.length > 0
+    ? await supabase.from('profiles').select('id, nombre, apellido, empresa').in('id', clienteIds)
+    : { data: [] }
+  const clientes = (rawClientes ?? []) as unknown as ProfileRow[]
+
+  // Obtener profesionales
+  const profIds = [...new Set(informes.map(i => i.profesional_id).filter(Boolean))] as string[]
+  const { data: rawProfs } = profIds.length > 0
+    ? await supabase.from('profesionales').select('id, titulo, user_id').in('id', profIds)
+    : { data: [] }
+  const profs = (rawProfs ?? []) as unknown as ProfRow[]
+
+  const profUserIds = profs.map(p => p.user_id)
+  const { data: rawProfProfiles } = profUserIds.length > 0
+    ? await supabase.from('profiles').select('id, nombre, apellido').in('id', profUserIds)
+    : { data: [] }
+  const profProfiles = (rawProfProfiles ?? []) as unknown as ProfileRow[]
 
   const totalIngresos = informes
     .filter(i => i.estado === 'entregado')
@@ -43,14 +57,13 @@ export default async function AdminInformesPage() {
       <Topbar title="Informes Financieros" subtitle="Todos los informes de la plataforma" />
       <div className="p-8 space-y-6">
 
-        {/* Stats */}
         <div className="grid grid-cols-5 gap-4">
           {[
-            { label: 'Total',       count: informes.length,                                       color: 'text-navy' },
-            { label: 'Solicitados', count: informes.filter(i=>i.estado==='solicitado').length,    color: 'text-yellow-600' },
-            { label: 'En proceso',  count: informes.filter(i=>i.estado==='en_proceso').length,    color: 'text-blue-600' },
-            { label: 'Entregados',  count: informes.filter(i=>i.estado==='entregado').length,     color: 'text-green-600' },
-            { label: 'Ingresos',    count: formatCLP(totalIngresos),                              color: 'text-gold' },
+            { label: 'Total',      count: informes.length,                                      color: 'text-navy' },
+            { label: 'Solicitados',count: informes.filter(i=>i.estado==='solicitado').length,   color: 'text-yellow-600' },
+            { label: 'En proceso', count: informes.filter(i=>i.estado==='en_proceso').length,   color: 'text-blue-600' },
+            { label: 'Entregados', count: informes.filter(i=>i.estado==='entregado').length,    color: 'text-green-600' },
+            { label: 'Ingresos',   count: formatCLP(totalIngresos),                             color: 'text-gold' },
           ].map(s => (
             <div key={s.label} className="bg-white rounded-xl border border-gray-100 p-5">
               <p className="text-gray-400 text-xs mb-1">{s.label}</p>
@@ -59,7 +72,6 @@ export default async function AdminInformesPage() {
           ))}
         </div>
 
-        {/* Tabla */}
         {!informes.length ? (
           <div className="bg-white rounded-xl border border-gray-100 py-16 text-center">
             <FileText size={36} className="text-gray-200 mx-auto mb-3" />
@@ -76,33 +88,31 @@ export default async function AdminInformesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {informes.map(inf => (
-                  <tr key={inf.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-5 py-4">
-                      <span className="font-semibold text-navy capitalize">{inf.tipo}</span>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${estadoStyle[inf.estado]}`}>
-                        {inf.estado.replace('_',' ')}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4">
-                      <p className="text-gray-800">{inf.cliente?.nombre} {inf.cliente?.apellido ?? ''}</p>
-                      <p className="text-xs text-gray-400">{inf.cliente?.empresa ?? '—'}</p>
-                    </td>
-                    <td className="px-5 py-4 text-gray-600">
-                      {inf.profesional
-                        ? `${inf.profesional.profiles?.nombre ?? ''} ${inf.profesional.profiles?.apellido ?? ''}`
-                        : <span className="text-gray-400 italic">Sin asignar</span>
-                      }
-                    </td>
-                    <td className="px-5 py-4 font-medium text-gray-700">{formatCLP(inf.precio)}</td>
-                    <td className="px-5 py-4 text-gray-400 text-xs">{formatDate(inf.created_at)}</td>
-                    <td className="px-5 py-4 text-gray-400 text-xs">
-                      {inf.entregado_at ? formatDate(inf.entregado_at) : '—'}
-                    </td>
-                  </tr>
-                ))}
+                {informes.map(inf => {
+                  const cli = clientes.find(c => c.id === inf.cliente_id)
+                  const prof = profs.find(p => p.id === inf.profesional_id)
+                  const profProfile = profProfiles.find(p => p.id === prof?.user_id)
+                  return (
+                    <tr key={inf.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-5 py-4"><span className="font-semibold text-navy capitalize">{inf.tipo}</span></td>
+                      <td className="px-5 py-4">
+                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${estadoStyle[inf.estado]}`}>
+                          {inf.estado.replace('_',' ')}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <p className="text-gray-800">{cli?.nombre} {cli?.apellido ?? ''}</p>
+                        <p className="text-xs text-gray-400">{cli?.empresa ?? '—'}</p>
+                      </td>
+                      <td className="px-5 py-4 text-gray-600">
+                        {profProfile ? `${profProfile.nombre} ${profProfile.apellido ?? ''}` : <span className="text-gray-400 italic">Sin asignar</span>}
+                      </td>
+                      <td className="px-5 py-4 font-medium text-gray-700">{formatCLP(inf.precio)}</td>
+                      <td className="px-5 py-4 text-gray-400 text-xs">{formatDate(inf.created_at)}</td>
+                      <td className="px-5 py-4 text-gray-400 text-xs">{inf.entregado_at ? formatDate(inf.entregado_at) : '—'}</td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>

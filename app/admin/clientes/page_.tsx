@@ -1,4 +1,5 @@
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import Topbar from '@/components/dashboard/Topbar'
 import { formatDate, formatCLP } from '@/lib/utils'
 import { Users } from 'lucide-react'
@@ -12,7 +13,9 @@ type ClienteAdmin = {
 }
 
 export default async function AdminClientesPage() {
-  const supabase = createAdminClient()
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
   const { data: rawClientes } = await supabase
     .from('profiles')
@@ -55,8 +58,12 @@ export default async function AdminClientesPage() {
                     <td className="px-5 py-4 text-gray-600">{c.rut_empresa ?? '—'}</td>
                     <td className="px-5 py-4 text-gray-600 max-w-32 truncate">{c.giro ?? '—'}</td>
                     <td className="px-5 py-4">
-                      <p className="text-gray-700 text-xs">Contrato: <strong>{c.trabajadores_contrato ?? 0}</strong></p>
-                      <p className="text-gray-700 text-xs">Honorarios: <strong>{c.trabajadores_honorarios ?? 0}</strong></p>
+                      <p className="text-gray-700 text-xs">
+                        Contrato: <strong>{c.trabajadores_contrato ?? 0}</strong>
+                      </p>
+                      <p className="text-gray-700 text-xs">
+                        Honorarios: <strong>{c.trabajadores_honorarios ?? 0}</strong>
+                      </p>
                     </td>
                     <td className="px-5 py-4 font-medium text-gray-700">
                       {c.promedio_ventas ? formatCLP(c.promedio_ventas) : '—'}
