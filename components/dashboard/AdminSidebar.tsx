@@ -6,15 +6,16 @@ import { createClient } from '@/lib/supabase/client'
 import type { Profile } from '@/lib/supabase/types'
 import {
   LayoutDashboard, Users, UserCheck,
-  FileText, BarChart2, LogOut, ChevronRight, Shield,
+  FileText, BarChart2, LogOut, ChevronRight, Shield, Settings,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const NAV = [
-  { href: '/admin',                label: 'Resumen',             icon: LayoutDashboard },
-  { href: '/admin/profesionales',  label: 'Profesionales',       icon: UserCheck },
-  { href: '/admin/clientes',       label: 'Clientes / PYMEs',    icon: Users },
-  { href: '/admin/informes',       label: 'Informes',            icon: FileText },
+  { href: '/admin',                        label: 'Resumen',           icon: LayoutDashboard },
+  { href: '/admin/profesionales',          label: 'Profesionales',     icon: UserCheck },
+  { href: '/admin/clientes',               label: 'Clientes / PYMEs',  icon: Users },
+  { href: '/admin/informes',               label: 'Informes',          icon: FileText },
+  { href: '/admin/informes/configuracion', label: 'Config. Informes',  icon: Settings },  
 ]
 
 export default function AdminSidebar({ profile }: { profile: Profile }) {
