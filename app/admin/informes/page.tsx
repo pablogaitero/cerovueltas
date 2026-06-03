@@ -11,6 +11,7 @@ type InformeAdmin = {
   id: string; tipo: string; estado: string; precio: number
   created_at: string; entregado_at: string | null
   cliente_id: string; profesional_id: string | null
+  archivo_url: string | null
 }
 
 type ProfileRow = { id: string; nombre: string; apellido: string | null; empresa: string | null }
@@ -21,7 +22,7 @@ export default async function AdminInformesPage() {
 
   const { data: rawInformes } = await supabase
     .from('informes')
-    .select('id, tipo, estado, precio, created_at, entregado_at, cliente_id, profesional_id')
+    .select('id, tipo, estado, precio, created_at, entregado_at, cliente_id, profesional_id, archivo_url')
     .order('created_at', { ascending: false })
   const informes = (rawInformes ?? []) as unknown as InformeAdmin[]
 
@@ -63,12 +64,12 @@ export default async function AdminInformesPage() {
         {/* Stats */}
         <div className="grid grid-cols-6 gap-4">
           {[
-            { label: 'Total',       count: informes.length,                                       color: 'text-navy' },
-            { label: 'Solicitados', count: informes.filter(i=>i.estado==='solicitado').length,    color: 'text-yellow-600' },
-            { label: 'En proceso',  count: informes.filter(i=>i.estado==='en_proceso').length,    color: 'text-blue-600' },
-            { label: 'Entregados',  count: informes.filter(i=>i.estado==='entregado').length,     color: 'text-green-600' },
-            { label: 'Rechazados',  count: informes.filter(i=>i.estado==='rechazado').length,     color: 'text-red-600' },
-            { label: 'Ingresos',    count: formatCLP(totalIngresos),                              color: 'text-gold' },
+            { label: 'Total',       count: informes.length,                                    color: 'text-navy' },
+            { label: 'Solicitados', count: informes.filter(i=>i.estado==='solicitado').length, color: 'text-yellow-600' },
+            { label: 'En proceso',  count: informes.filter(i=>i.estado==='en_proceso').length, color: 'text-blue-600' },
+            { label: 'Entregados',  count: informes.filter(i=>i.estado==='entregado').length,  color: 'text-green-600' },
+            { label: 'Rechazados',  count: informes.filter(i=>i.estado==='rechazado').length,  color: 'text-red-600' },
+            { label: 'Ingresos',    count: formatCLP(totalIngresos),                           color: 'text-gold' },
           ].map(s => (
             <div key={s.label} className="bg-white rounded-xl border border-gray-100 p-4">
               <p className="text-gray-400 text-xs mb-1">{s.label}</p>
@@ -84,7 +85,7 @@ export default async function AdminInformesPage() {
             <p className="text-gray-400 text-sm">No hay informes aún.</p>
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+          <div className="bg-white rounded-xl border border-gray-100 overflow-visible">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-50 bg-gray-50/50">
@@ -95,8 +96,8 @@ export default async function AdminInformesPage() {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {informes.map(inf => {
-                  const cli        = clientes.find(c => c.id === inf.cliente_id)
-                  const prof       = profs.find(p => p.id === inf.profesional_id)
+                  const cli         = clientes.find(c => c.id === inf.cliente_id)
+                  const prof        = profs.find(p => p.id === inf.profesional_id)
                   const profProfile = profProfiles.find(p => p.id === prof?.user_id)
                   return (
                     <tr key={inf.id} className="hover:bg-gray-50/50 transition-colors">
@@ -128,6 +129,7 @@ export default async function AdminInformesPage() {
                           informeId={inf.id}
                           estadoActual={inf.estado}
                           entregadoAt={inf.entregado_at}
+                          archivoUrl={inf.archivo_url ?? null}
                         />
                       </td>
                     </tr>
