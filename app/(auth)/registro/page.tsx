@@ -128,9 +128,9 @@ export default function RegistroPage() {
         </Link>
         <div>
           <h2 className="font-display text-4xl text-white leading-tight mb-4">
-            Únete a más de{' '}
-            <span className="text-gold">8.400 empresas</span>{' '}
-            que ya encontraron su profesional
+            Conecta tu PYME con el{' '}
+            <span className="text-gold">profesional indicado</span>{' '}
+              en Antofagasta
           </h2>
           <ul className="space-y-3 mt-6">
             {[
